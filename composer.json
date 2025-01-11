@@ -1,0 +1,30 @@
+{
+    "name": "rekryt/webmonitor",
+    "authors": [
+        {
+            "name": "Rekryt",
+            "homepage": "https://github.com/rekryt"
+        }
+    ],
+    "require": {
+        "opencck/server": "v1.0.0",
+        "vlucas/phpdotenv": "^5.5",
+        "amphp/process": "^2.0",
+        "amphp/http-client": "^5.2"
+    },
+    "autoload": {
+        "files": [
+            "src/functions.php"
+        ],
+        "psr-4": {
+            "OpenCCK\\": [
+                "src/"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
+}

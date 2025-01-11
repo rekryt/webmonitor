@@ -1,0 +1,27 @@
+[
+    {
+        "name": "response from google.com",
+        "type": "http",
+        "params": {
+            "url": "https://google.com",
+            "timeout": 30
+        }
+    },
+    {
+        "name": "ping from google.com",
+        "type": "ping",
+        "params": {
+            "host": "google.com",
+            "timeout": 30
+        }
+    },
+    {
+        "name": "tcp connect to google.com",
+        "type": "tcp",
+        "params": {
+            "host": "google.com",
+            "port": 443,
+            "timeout": 30
+        }
+    }
+]
