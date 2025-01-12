@@ -18,7 +18,8 @@ use function Amp\Socket\connect;
 final class Check {
     public string $value;
     private HttpClient $httpClient;
-    private bool $isAlerting = false;
+    private int $tries = 0;
+    private ?object $lastMessage = null;
 
     /**
      * @param string $site Name of portal
@@ -35,9 +36,6 @@ final class Check {
     ) {
         $this->httpClient = (new HttpClientBuilder())->build();
         $this->reload();
-        EventLoop::repeat($this->params['timeout'], function () {
-            $this->reload();
-        });
     }
     /**
      * @return void
@@ -111,15 +109,25 @@ final class Check {
 
         // Alert
         try {
+            $telegram = new TelegramService();
+            $chat_id = \OpenCCK\getEnv('TELEGRAM_BOT_CHAT_ID');
+            $triesCount = 2;
+
+            if (!is_null($this->lastMessage) && $newValue !== '+Inf') {
+                $telegram->deleteMessage($chat_id, $this->lastMessage->message_id);
+                $this->lastMessage = null;
+            }
+
             if (
                 isset($this->value) &&
                 \OpenCCK\getEnv('TELEGRAM_BOT_CHAT_ID') &&
                 (($this->value !== '+Inf' && $newValue === '+Inf') || ($this->value === '+Inf' && $newValue !== '+Inf'))
             ) {
-                $telegram = new TelegramService();
                 $text =
                     $newValue === '+Inf'
-                        ? \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_ALERT')
+                        ? ($this->tries === $triesCount
+                            ? \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_ALERT')
+                            : \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_WARNING'))
                         : \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_SUCCESS');
                 foreach (['site', 'name', 'type', 'value'] as $pk) {
                     $val = $this->{$pk};
@@ -129,15 +137,31 @@ final class Check {
                     $text = str_replace('{' . $pk . '}', $val, $text);
                 }
 
-                $telegram->sendMessage(
-                    array_merge(
-                        ['text' => $text],
-                        TelegramService::getOptions(
-                            chat_id: \OpenCCK\getEnv('TELEGRAM_BOT_CHAT_ID'),
-                            parse_mode: 'html'
+                if ($this->tries < $triesCount && $newValue === '+Inf') {
+                    $this->tries++;
+                    $newValue = $this->value;
+                    App::getLogger()->notice('Pending ' . $this->type, [$this->value, $this->name, $this->params]);
+                } else {
+                    $this->tries = 0;
+                    if (!is_null($this->lastMessage) && $newValue === '+Inf') {
+                        $telegram->deleteMessage($chat_id, $this->lastMessage->message_id);
+                        $this->lastMessage = null;
+                    }
+                }
+
+                if ($this->tries <= 1) {
+                    $message = $telegram->sendMessage(
+                        array_merge(
+                            ['text' => $text, 'silent' => $this->tries > 0],
+                            TelegramService::getOptions(
+                                chat_id: $chat_id,
+                                parse_mode: 'html',
+                                disable_notification: $this->tries > 0
+                            )
                         )
-                    )
-                );
+                    );
+                    $this->lastMessage = $this->tries > 0 ? $message : null;
+                }
             }
         } catch (\Throwable $e) {
             App::getLogger()->error($e->getMessage(), [$this]);
@@ -145,5 +169,9 @@ final class Check {
 
         $this->value = $newValue;
         App::getLogger()->notice('Reloaded ' . $this->type, [$this->value, $this->name, $this->params]);
+
+        EventLoop::delay($this->params['timeout'], function () {
+            $this->reload();
+        });
     }
 }

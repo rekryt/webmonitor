@@ -106,12 +106,29 @@ final class TelegramService {
      * @throws StreamException
      * @throws HttpException
      */
-    public function sendMessage(array $data = []): bool {
+    public function sendMessage(array $data = []): object|bool {
         $response = $this->httpRequest($this->baseURL . '/bot' . $this->token . '/sendMessage', $data, 'POST');
 
         $this->logger->notice('sendMessage', [json_encode($response)]);
 
-        return true;
+        return $response->ok ? $response->result : false;
+    }
+
+    /**
+     * @throws BufferException
+     * @throws StreamException
+     * @throws HttpException
+     */
+    public function deleteMessage(string $chat_id, string $message_id): object|bool {
+        $params = [
+            'chat_id' => $chat_id,
+            'message_id' => $message_id,
+        ];
+        $response = $this->httpRequest($this->baseURL . '/bot' . $this->token . '/deleteMessage', $params, 'POST');
+
+        $this->logger->notice('deleteMessage', [json_encode($params)]);
+
+        return $response->ok ? $response->result : false;
     }
 
     public function sendPhoto(array $data = []): mixed {
