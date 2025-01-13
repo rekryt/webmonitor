@@ -47,7 +47,7 @@ class MainController extends AbstractController {
      * @return string
      */
     private function getMetric(string $name, array $data, string $type = 'gauge', string $description = ''): string {
-        $prefix = (\OpenCCK\getEnv('SYS_METRICS_PREFIX') ?? 'webmon') . '_';
+        $prefix = (\OpenCCK\getEnv('SYS_METRICS_PREFIX') ?? 'wm') . '_';
         $name = $prefix . $name;
         return implode(
             "\n",
