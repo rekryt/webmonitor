@@ -22,6 +22,7 @@ docker compose build
 | `SYS_AUTH_LOGIN`       | логин для http авторизации           |
 | `SYS_AUTH_PASSWORD`    | пароль                               |
 | `SYS_METRICS_PREFIX`   | префикс имени метрик                 |
+| `SYS_CHECK_MAX_TRIES`  | число попыток проверок               |
 | `TELEGRAM_BOT_TOKEN`   | токен Telegram бота                  |
 | `TELEGRAM_BOT_CHAT_ID` | id чата\пользователя для уведомлений |
 

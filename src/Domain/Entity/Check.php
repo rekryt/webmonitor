@@ -111,7 +111,7 @@ final class Check {
         try {
             $telegram = new TelegramService();
             $chat_id = \OpenCCK\getEnv('TELEGRAM_BOT_CHAT_ID');
-            $triesCount = 2;
+            $triesCount = \OpenCCK\getEnv('SYS_CHECK_MAX_TRIES') ?? 3;
 
             if (!is_null($this->lastMessage) && $newValue !== '+Inf') {
                 $telegram->deleteMessage($chat_id, $this->lastMessage->message_id);
@@ -125,7 +125,7 @@ final class Check {
             ) {
                 $text =
                     $newValue === '+Inf'
-                        ? ($this->tries === $triesCount
+                        ? ($this->tries == $triesCount
                             ? \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_ALERT')
                             : \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_WARNING'))
                         : \OpenCCK\getEnv('TELEGRAM_BOT_MESSAGE_SUCCESS');
@@ -140,7 +140,11 @@ final class Check {
                 if ($this->tries < $triesCount && $newValue === '+Inf') {
                     $this->tries++;
                     $newValue = $this->value;
-                    App::getLogger()->notice('Pending ' . $this->type, [$this->value, $this->name, $this->params]);
+                    App::getLogger()->notice('Pending[' . $this->tries . '/' . $triesCount . '] ' . $this->type, [
+                        $this->value,
+                        $this->name,
+                        $this->params,
+                    ]);
                 } else {
                     $this->tries = 0;
                     if (!is_null($this->lastMessage) && $newValue === '+Inf') {
@@ -162,6 +166,8 @@ final class Check {
                     );
                     $this->lastMessage = $this->tries > 0 ? $message : null;
                 }
+            } else {
+                $this->tries = 0;
             }
         } catch (\Throwable $e) {
             App::getLogger()->error($e->getMessage(), [$this]);
