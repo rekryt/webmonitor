@@ -153,7 +153,7 @@ final class Check {
                     }
                 }
 
-                if ($this->tries <= 1) {
+                if ($this->tries == 0 || $this->tries == $triesCount) {
                     $message = $telegram->sendMessage(
                         array_merge(
                             ['text' => $text, 'silent' => $this->tries > 0],
